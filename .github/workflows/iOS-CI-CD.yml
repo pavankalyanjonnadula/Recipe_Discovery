@@ -1,0 +1,51 @@
+name: iOS CI/CD Pipeline
+
+# When to run
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: macos-14
+    
+    steps:
+    # Step 1: Checkout code
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+    
+    # Step 2: Show Xcode version
+    - name: Show Xcode Version
+      run: |
+        xcodebuild -version
+        xcrun simctl list devices
+    
+    # Step 3: Build the app
+    - name: Build App
+      run: |
+        xcodebuild clean build \
+          -scheme RecipeDiscovery \
+          -destination 'platform=iOS Simulator,name=iPhone 15 Pro,OS=17.4' \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO
+    
+    # Step 4: Run Unit Tests
+    - name: Run Tests
+      run: |
+        xcodebuild test \
+          -scheme RecipeDiscovery \
+          -destination 'platform=iOS Simulator,name=iPhone 15 Pro,OS=17.4' \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO
+    
+    # Step 5: Upload test results (if tests fail)
+    - name: Upload Test Results
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results
+        path: |
+          ~/Library/Logs/DiagnosticReports/
